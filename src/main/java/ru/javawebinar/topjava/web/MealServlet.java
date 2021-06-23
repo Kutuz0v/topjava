@@ -15,9 +15,11 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class MealServlet extends HttpServlet {
     private static final Logger log = LoggerFactory.getLogger(MealServlet.class);
+    private Integer authUserId = SecurityUtil.authUserId();
 
     private MealRepository repository;
 
@@ -34,10 +36,12 @@ public class MealServlet extends HttpServlet {
         Meal meal = new Meal(id.isEmpty() ? null : Integer.valueOf(id),
                 LocalDateTime.parse(request.getParameter("dateTime")),
                 request.getParameter("description"),
-                Integer.parseInt(request.getParameter("calories")));
+                Integer.parseInt(request.getParameter("calories")),
+                Integer.parseInt(request.getParameter("authUserId")));
 
         log.info(meal.isNew() ? "Create {}" : "Update {}", meal);
-        repository.save(meal);
+        if (meal.getAuthUserId().equals(authUserId)) repository.save(meal);
+        else response.setStatus(401);
         response.sendRedirect("meals");
     }
 
@@ -49,22 +53,32 @@ public class MealServlet extends HttpServlet {
             case "delete":
                 int id = getId(request);
                 log.info("Delete {}", id);
-                repository.delete(id);
+                if (repository.get(id).getAuthUserId().equals(authUserId))
+                    repository.delete(id);
+                else response.setStatus(401);
                 response.sendRedirect("meals");
                 break;
             case "create":
             case "update":
                 final Meal meal = "create".equals(action) ?
-                        new Meal(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES), "", 1000) :
+                        new Meal(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES), "", 1000, authUserId) :
                         repository.get(getId(request));
-                request.setAttribute("meal", meal);
-                request.getRequestDispatcher("/mealForm.jsp").forward(request, response);
+                if (meal.getAuthUserId().equals(authUserId)) {
+                    request.setAttribute("meal", meal);
+                    request.getRequestDispatcher("/mealForm.jsp").forward(request, response);
+                } else {
+                    response.setStatus(401);
+                    response.sendRedirect("meals");
+                }
                 break;
             case "all":
             default:
                 log.info("getAll");
                 request.setAttribute("meals",
-                        MealsUtil.getTos(repository.getAll(), MealsUtil.DEFAULT_CALORIES_PER_DAY));
+                        MealsUtil.getTos(repository.getAll(), MealsUtil.DEFAULT_CALORIES_PER_DAY)
+                                .stream()
+                                .filter(mealTo -> mealTo.getAuthUserId().equals(authUserId))
+                                .collect(Collectors.toList()));
                 request.getRequestDispatcher("/meals.jsp").forward(request, response);
                 break;
         }
