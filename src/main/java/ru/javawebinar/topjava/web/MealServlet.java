@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import ru.javawebinar.topjava.model.Meal;
 import ru.javawebinar.topjava.repository.MealRepository;
 import ru.javawebinar.topjava.repository.inmemory.InMemoryMealRepository;
+import ru.javawebinar.topjava.to.MealTo;
 import ru.javawebinar.topjava.util.MealsUtil;
 
 import javax.servlet.ServletException;
@@ -14,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -40,8 +42,7 @@ public class MealServlet extends HttpServlet {
                 Integer.parseInt(request.getParameter("authUserId")));
 
         log.info(meal.isNew() ? "Create {}" : "Update {}", meal);
-        if (meal.getAuthUserId().equals(authUserId)) repository.save(meal);
-        else response.setStatus(401);
+        repository.save(meal, authUserId);
         response.sendRedirect("meals");
     }
 
@@ -53,32 +54,23 @@ public class MealServlet extends HttpServlet {
             case "delete":
                 int id = getId(request);
                 log.info("Delete {}", id);
-                if (repository.get(id).getAuthUserId().equals(authUserId))
-                    repository.delete(id);
-                else response.setStatus(401);
+                repository.delete(id, authUserId);
                 response.sendRedirect("meals");
                 break;
             case "create":
             case "update":
                 final Meal meal = "create".equals(action) ?
                         new Meal(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES), "", 1000, authUserId) :
-                        repository.get(getId(request));
-                if (meal.getAuthUserId().equals(authUserId)) {
-                    request.setAttribute("meal", meal);
-                    request.getRequestDispatcher("/mealForm.jsp").forward(request, response);
-                } else {
-                    response.setStatus(401);
-                    response.sendRedirect("meals");
-                }
+                        repository.get(getId(request), authUserId);
+
+                request.setAttribute("meal", meal);
+                request.getRequestDispatcher("/mealForm.jsp").forward(request, response);
                 break;
             case "all":
             default:
                 log.info("getAll");
                 request.setAttribute("meals",
-                        MealsUtil.getTos(repository.getAll(), MealsUtil.DEFAULT_CALORIES_PER_DAY)
-                                .stream()
-                                .filter(mealTo -> mealTo.getAuthUserId().equals(authUserId))
-                                .collect(Collectors.toList()));
+                        MealsUtil.getTos(repository.getAll(authUserId), MealsUtil.DEFAULT_CALORIES_PER_DAY));
                 request.getRequestDispatcher("/meals.jsp").forward(request, response);
                 break;
         }
