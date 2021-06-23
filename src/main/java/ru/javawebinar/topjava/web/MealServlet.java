@@ -2,10 +2,10 @@ package ru.javawebinar.topjava.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.javawebinar.topjava.model.Meal;
-import ru.javawebinar.topjava.repository.MealRepository;
-import ru.javawebinar.topjava.repository.inmemory.InMemoryMealRepository;
-import ru.javawebinar.topjava.util.MealsUtil;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import ru.javawebinar.topjava.to.MealTo;
+import ru.javawebinar.topjava.web.meal.MealRestController;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -16,30 +16,28 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
+
 public class MealServlet extends HttpServlet {
     private static final Logger log = LoggerFactory.getLogger(MealServlet.class);
-    private Integer authUserId = SecurityUtil.authUserId();
-
-    private MealRepository repository;
-
-    @Override
-    public void init() {
-        repository = new InMemoryMealRepository();
-    }
+    private static ConfigurableApplicationContext appCtx;
+    private final Integer authUserId = SecurityUtil.authUserId();
+    private MealRestController controller;
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         String id = request.getParameter("id");
 
-        Meal meal = new Meal(id.isEmpty() ? null : Integer.valueOf(id),
+        MealTo mealTo = new MealTo(id.isEmpty() ? null : Integer.valueOf(id),
                 LocalDateTime.parse(request.getParameter("dateTime")),
                 request.getParameter("description"),
                 Integer.parseInt(request.getParameter("calories")),
-                Integer.parseInt(request.getParameter("authUserId")));
+                Integer.parseInt(request.getParameter("authUserId")),
+                false);
 
-        log.info(meal.isNew() ? "Create {}" : "Update {}", meal);
-        repository.save(meal, authUserId);
+        log.info(mealTo.isNew() ? "Create {}" : "Update {}", mealTo);
+        if (mealTo.isNew()) controller.create(mealTo);
+        else controller.update(mealTo, mealTo.getId());
         response.sendRedirect("meals");
     }
 
@@ -51,30 +49,50 @@ public class MealServlet extends HttpServlet {
             case "delete":
                 int id = getId(request);
                 log.info("Delete {}", id);
-                repository.delete(id, authUserId);
+                controller.delete(id);
                 response.sendRedirect("meals");
                 break;
             case "create":
+                MealTo mealToCreate = new MealTo(null, LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES),
+                        "",
+                        1000,
+                        authUserId,
+                        false);
+                request.setAttribute("meal", mealToCreate);
+                request.getRequestDispatcher("/mealForm.jsp").forward(request, response);
+                break;
             case "update":
-                final Meal meal = "create".equals(action) ?
-                        new Meal(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES), "", 1000, authUserId) :
-                        repository.get(getId(request), authUserId);
-
-                request.setAttribute("meal", meal);
+                MealTo mealToUpdate = controller.get(getId(request));
+                request.setAttribute("meal", mealToUpdate);
                 request.getRequestDispatcher("/mealForm.jsp").forward(request, response);
                 break;
             case "all":
-            default:
                 log.info("getAll");
-                request.setAttribute("meals",
-                        MealsUtil.getTos(repository.getAll(authUserId), MealsUtil.DEFAULT_CALORIES_PER_DAY));
+                request.setAttribute("meals", controller.getAll());
                 request.getRequestDispatcher("/meals.jsp").forward(request, response);
                 break;
+            default:
+                response.setStatus(400);
+                log.info("Bad Request, action={}", action);
+                response.sendRedirect("meals");
         }
     }
 
     private int getId(HttpServletRequest request) {
         String paramId = Objects.requireNonNull(request.getParameter("id"));
         return Integer.parseInt(paramId);
+    }
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        appCtx = new ClassPathXmlApplicationContext("spring/spring-app.xml");
+        controller = appCtx.getBean(MealRestController.class);
+    }
+
+    @Override
+    public void destroy() {
+        appCtx.close();
+        super.destroy();
     }
 }

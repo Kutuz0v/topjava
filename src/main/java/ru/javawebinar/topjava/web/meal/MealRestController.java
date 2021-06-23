@@ -5,8 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import ru.javawebinar.topjava.service.MealService;
 import ru.javawebinar.topjava.to.MealTo;
+import ru.javawebinar.topjava.util.MealsUtil;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 import static ru.javawebinar.topjava.web.SecurityUtil.authUserId;
@@ -20,7 +22,8 @@ public class MealRestController {
 
     public List<MealTo> getAll() {
         log.info("getAll");
-        return service.getAll(authUserId());
+        return MealsUtil.getTos(service.getAll(authUserId()).stream().map(MealTo::toMeal).collect(Collectors.toList()),
+                MealsUtil.DEFAULT_CALORIES_PER_DAY);
     }
 
     public MealTo get(int id) {

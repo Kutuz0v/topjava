@@ -56,6 +56,10 @@ public class MealTo {
         this.authUserId = authUserId;
     }
 
+    public boolean isNew() {
+        return id == null;
+    }
+
     @Override
     public String toString() {
         return "MealTo{" +
