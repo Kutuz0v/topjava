@@ -28,9 +28,10 @@ public class Meal extends AbstractBaseEntity {
         this.authUserId = authUserId;
     }
 
-    public MealTo toMealTo(){
+    public MealTo toMealTo() {
         return new MealTo(id, dateTime, description, calories, authUserId, false);
     }
+
     public Integer getId() {
         return id;
     }

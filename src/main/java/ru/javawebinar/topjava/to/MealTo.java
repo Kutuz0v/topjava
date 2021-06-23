@@ -12,10 +12,8 @@ public class MealTo {
     private final String description;
 
     private final int calories;
-
-    Integer authUserId;
-
     private final boolean excess;
+    private Integer authUserId;
 
     public MealTo(Integer id, LocalDateTime dateTime, String description, int calories, Integer authUserId, boolean excess) {
         this.id = id;
@@ -29,6 +27,7 @@ public class MealTo {
     public Meal toMeal() {
         return new Meal(id, dateTime, description, calories, authUserId);
     }
+
     public Integer getId() {
         return id;
     }

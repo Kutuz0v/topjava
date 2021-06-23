@@ -6,11 +6,10 @@ import ru.javawebinar.topjava.repository.MealRepository;
 import ru.javawebinar.topjava.to.MealTo;
 import ru.javawebinar.topjava.util.MealsUtil;
 
-import static ru.javawebinar.topjava.util.MealsUtil.getTos;
+import java.util.List;
+
 import static ru.javawebinar.topjava.util.MealsUtil.DEFAULT_CALORIES_PER_DAY;
 import static ru.javawebinar.topjava.util.ValidationUtil.*;
-
-import java.util.List;
 
 @Service
 public class MealService {
