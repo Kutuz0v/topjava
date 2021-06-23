@@ -1,5 +1,7 @@
 package ru.javawebinar.topjava.model;
 
+import ru.javawebinar.topjava.to.MealTo;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,6 +28,9 @@ public class Meal extends AbstractBaseEntity {
         this.authUserId = authUserId;
     }
 
+    public MealTo toMealTo(){
+        return new MealTo(id, dateTime, description, calories, authUserId, false);
+    }
     public Integer getId() {
         return id;
     }
