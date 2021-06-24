@@ -10,9 +10,15 @@
         .normal {
             color: green;
         }
-
         .excess {
             color: red;
+        }
+        .block {
+            display: inline-block;
+        }
+        input,
+        label {
+            display: block;
         }
     </style>
 </head>
@@ -21,6 +27,45 @@
     <h3><a href="index.html">Home</a></h3>
     <hr/>
     <h2>Meals</h2>
+    <br/>
+
+
+
+    <form method="post" action="meals">
+        <input type="hidden" name="filter" value="true">
+            <div class="block">
+                <label for="startDate">От даты (включая)</label>
+                <input type="date" name="startDate" id="startDate" autocomplete="off">
+            </div>
+            <div class="block">
+                <label for="endDate">До даты (включая)</label>
+                <input type="date" name="endDate" id="endDate">
+            </div>
+            <div class="block">
+                <label for="startTime">От времени (включая)</label>
+                <input type="time" name="startTime" id="startTime">
+            </div>
+            <div class="block">
+                <label for="endTime">До времени (исключая)</label>
+                <input type="time" name="endTime" id="endTime">
+            </div>
+
+        <input type="submit" value="Filter">
+    </form>
+    <form action="meals" method="get">
+        <button>Cancel filter</button>
+    </form>
+    <br>
+    <br>
+
+
+
+
+
+
+
+
+    </form>
     <a href="meals?action=create">Add Meal</a>
     <br><br>
     <table border="1" cellpadding="8" cellspacing="0">
